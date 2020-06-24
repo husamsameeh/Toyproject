@@ -20,6 +20,7 @@ public class RepositoryConfigurations {
     {
         return new AerospikeTemplate(aerospikeClient(),"test");
     }
+
     @Bean
     public AerospikeClient aerospikeClient(){
         ClientPolicy clientPolicy = new ClientPolicy();

@@ -25,8 +25,9 @@ public class ServerOperations {
 
         System.out.println("spinning a server");
         Server server = new Server();
+        server.setId((int)Thread.currentThread().getId());
+        databaseOperations.addIntoDatabase(server);
         waitForCreationToBeDone(server);
-
         return server;
     }
 
@@ -39,6 +40,7 @@ public class ServerOperations {
                 try {
                     Thread.sleep(20000);
                     server.setStatus(Constants.ACTIVE);
+                    databaseOperations.updateServerInDatabase(server);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -50,29 +52,49 @@ public class ServerOperations {
     public void beginAllocatingServerToClient(int wantedCapacity) throws InterruptedException {
 
         System.out.println("beginning the allocating process");
+        Server server;
+        synchronized (serversArrayList) {
+            serversArrayList = databaseOperations.getAll();
+            server = searchForServersByCapacity(wantedCapacity);
 
-        serversArrayList = databaseOperations.getAll();
-        Server server = searchForServersByCapacity(wantedCapacity);
-        if (server == null)
-        {
-            server = spinServer();
+            if (server == null) {
+                server = spinServer();
 
+            }
         }
-        allocateServer(server);
+        allocateServer(server,wantedCapacity);
     }
 
-    public void allocateServer(Server server)
+    public void allocateServer(Server server , int wantedCapacity)
     {
         System.out.println("the server is being allocated");
-
+        if (server.getStatus() != Constants.ACTIVE)
+        {
+            waitForAvalibility(server);
+        }
+        server.setCapacity(server.getCapacity()-wantedCapacity);
+        databaseOperations.updateServerInDatabase(server);
     }
     
     public void waitForAvalibility(Server server){
         System.out.println("waiting for the server to become active");
-        while(server.getStatus() != Constants.ACTIVE)
-        {
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while(server.getStatus() != Constants.ACTIVE)
+                {
+                    System.out.println(server.getStatus());
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+                System.out.println("the server is now active");
+            }
+        });
 
-        }
+        thread.start();
     }
 
     public Server searchForServersByCapacity(int capacity)

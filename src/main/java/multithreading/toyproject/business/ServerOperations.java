@@ -53,7 +53,7 @@ public class ServerOperations {
 
         System.out.println("beginning the allocating process");
         Server server;
-        synchronized (serversArrayList) {
+        synchronized (this.getClass()) {
             serversArrayList = databaseOperations.getAll();
             server = searchForServersByCapacity(wantedCapacity);
 
